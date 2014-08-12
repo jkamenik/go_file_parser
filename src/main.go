@@ -1,13 +1,16 @@
 package main
 
 import (
-  "io"
-  "log"
-  "os"
+	// "io"
+	"log"
+	"os"
+	"fmt"
 )
 
 
 func main() {
+	done := make(chan bool)
+
 	fp, err := os.Open("test_data/test.csv.xz")
 	if err != nil {
 		log.Fatal(err)
@@ -15,11 +18,22 @@ func main() {
 	defer fp.Close()
 
 	r := xzReader(fp)
+	log.Print(r)
+	s := stringGenerator(r, done)
+	log.Print(s)
 
-	n, err := io.Copy(os.Stdout, r)
-	if err != nil {
-		log.Printf("copied %d bytes with err: %v", n, err)
-	} else {
-		log.Printf("copied %d bytes", n)
+	loop(done, s)
+
+	println("after select")
+}
+
+func loop(done chan bool, input <- chan string) {
+	for {
+		select {
+			case line := <- input:
+				fmt.Printf("line: %s\n", line)
+			case <- done:
+				return
+		}
 	}
 }
