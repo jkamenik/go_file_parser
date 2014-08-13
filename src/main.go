@@ -1,39 +1,26 @@
 package main
 
 import (
-	// "io"
-	"log"
-	"os"
-	"fmt"
+  // "io"
+  "log"
+  "os"
+  "fmt"
+  "encoding/csv"
 )
 
-
 func main() {
-	done := make(chan bool)
+  fp, err := os.Open("test_data/test.csv.xz")
+  if err != nil {
+    log.Fatal(err)
+  }
+  defer fp.Close()
 
-	fp, err := os.Open("test_data/test.csv.xz")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer fp.Close()
+  xz  := xzReader(fp)
+  csv := csv.NewReader(xz)
 
-	r := xzReader(fp)
-	log.Print(r)
-	s := stringGenerator(r, done)
-	log.Print(s)
+  header, err := csv.Read()
+  fmt.Println(header)
 
-	loop(done, s)
-
-	println("after select")
-}
-
-func loop(done chan bool, input <- chan string) {
-	for {
-		select {
-			case line := <- input:
-				fmt.Printf("line: %s\n", line)
-			case <- done:
-				return
-		}
-	}
+  lines, err := csv.ReadAll()
+  fmt.Println(NewUnprocessedTrafficTable(header, lines))
 }
