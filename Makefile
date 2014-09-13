@@ -7,5 +7,5 @@ get:
 	go get github.com/lib/pq
 
 test: build
-	./file-parser test_data/test.csv.xz
-	# ./file-parser test_data/1k_fps.csv.xz
+	# time ./file-parser test_data/test.csv.xz
+	time ./file-parser test_data/1k_fps.csv.xz
