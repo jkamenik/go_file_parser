@@ -6,12 +6,19 @@ import (
   "os"
   "fmt"
   "encoding/csv"
+  "time"
+  "sync"
 )
 
-type Chunk struct {
+type CsvLine struct {
   Header []string
-  Lines  [][]string
+  Line   []string
 }
+
+type Line CsvLine
+
+const Buffer = 20
+
 
 func main() {
   fp, err := os.Open(os.Args[1])
@@ -23,61 +30,88 @@ func main() {
   xz  := xzReader(fp)
   csv := csv.NewReader(xz)
 
-  chunks, done := chunkFile(csv)
-  done = readChunks(chunks, done)
+  lines, done := streamFile(csv)
+  convertedLines, done := convertLine(lines,done)
+  done = printStream(convertedLines,done)
 
-  select {
-    case <- done:
-      fmt.Println("Exiting")
-  }
+  // halt until I am told we are done
+  <- done
+  fmt.Println("Done")
+  os.Exit(0)
 }
 
-func chunkFile(csv *csv.Reader) (chunks chan Chunk, done chan bool) {
-  chunkSize := 1000
-  chunks = make(chan Chunk, 10)
-  done   = make(chan bool)
+func streamFile(csv *csv.Reader) (lines chan CsvLine, done chan bool) {
+  lines = make(chan CsvLine, Buffer)
+  done  = make(chan bool)
 
   go func(){
+    // get Header
     header, err := csv.Read()
     if err != nil {
       done <- true
       return
     }
 
-    lines := [][]string{}
-
     for {
       line, err := csv.Read()
+
+      if len(line) > 0 {
+        lines <- CsvLine{Header: header, Line: line}
+      }
+
       if err != nil {
-        break
-      }
-      lines = append(lines, line)
-
-      if len(lines) >= chunkSize {
-        chunks <- Chunk{Header: header, Lines: lines}
-        lines = [][]string{}
+        done <- true
+        return
       }
     }
+  }()
 
-    if len(lines) >= 0 {
-      chunks <- Chunk{Header: header, Lines: lines}
+  return
+}
+
+func convertLine(csvLines chan CsvLine,finished chan bool) (lines chan Line, done chan bool) {
+  lines = make(chan Line, Buffer)
+  done = make(chan bool)
+
+  process := func(processor int){
+    for {
+      select {
+        case line := <- csvLines:
+          // simulate a IO conversion
+          time.Sleep(1 * time.Millisecond)
+          fmt.Printf("%d: %s\n", processor, line)
+          lines <- Line(line)
+        case <- finished:
+          done <- true
+          return
+      }
     }
+  }
+
+  go func(){
+    var ws sync.WaitGroup
+    for i := 0; i < Buffer; i++ {
+      fmt.Println(i)
+      ws.Add(1)
+      go process(i)
+    }
+
+    ws.Wait()
     done <- true
   }()
 
   return
 }
 
-func readChunks(chunks chan Chunk, chunkerDone chan bool) (done chan bool) {
+func printStream(lines chan Line,finished chan bool) (done chan bool) {
   done = make(chan bool)
 
   go func(){
     for {
       select {
-        case chunk := <-chunks:
-          fmt.Println(chunk)
-        case _ = <-chunkerDone:
-          fmt.Println("Done")
+        case line := <- lines:
+          fmt.Println(line)
+        case <- finished:
           done <- true
           return
       }
