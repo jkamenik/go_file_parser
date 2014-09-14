@@ -1,5 +1,9 @@
 package main
 
+import (
+  "fmt"
+)
+
 type NetflowLine struct {
   ts string
   te string
@@ -11,6 +15,9 @@ type NetflowLine struct {
   ibyt string
   obyt string
 }
+
+type NetflowTable []*NetflowLine
+
 
 func NewNetflowLine(csv *CsvLine) (*NetflowLine,error) {
   self := NetflowLine{}
@@ -27,4 +34,9 @@ func NewNetflowLine(csv *CsvLine) (*NetflowLine,error) {
   self.obyt = csv.Get("obyt")
 
   return &self, nil
+}
+
+func (self *NetflowTable)Send() {
+  // code to send to the database here.
+  fmt.Printf("----\nSending %d lines\n%s", len(*self), *self)
 }

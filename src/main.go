@@ -54,12 +54,23 @@ func printStream(lines chan *NetflowLine) (done chan int) {
   done = make(chan int)
 
   go func(){
+    table := NetflowTable{}
     i := 0
+
     for line := range lines {
-      fmt.Println(line)
-      i++
-      // fmt.Println(i)
+      i ++
+      table = append(table, line)
+
+      if len(table) >= 1000 {
+        table.Send()
+        table = NetflowTable{}
+      }
     }
+
+    if len(table) > 0 {
+      table.Send()
+    }
+
     done <- i
   }()
 
