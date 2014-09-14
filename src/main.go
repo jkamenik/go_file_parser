@@ -11,8 +11,6 @@ import (
 )
 
 
-type Line CsvLine
-
 const Buffer = 20000
 
 
@@ -36,13 +34,15 @@ func main() {
   os.Exit(0)
 }
 
-func convertLine(csvLines chan CsvLine) (lines chan Line) {
-  lines = make(chan Line, Buffer)
+func convertLine(csvLines chan *CsvLine) (lines chan *NetflowLine) {
+  lines = make(chan *NetflowLine, Buffer)
 
   go func(){
+    var netflowLine *NetflowLine
+
     for line := range csvLines {
-      // TODO: Put conversion here
-      lines <- Line(line)
+      netflowLine, _ = NewNetflowLine(line)
+      lines <- netflowLine
     }
     close(lines)
   }()
@@ -50,13 +50,13 @@ func convertLine(csvLines chan CsvLine) (lines chan Line) {
   return
 }
 
-func printStream(lines chan Line) (done chan int) {
+func printStream(lines chan *NetflowLine) (done chan int) {
   done = make(chan int)
 
   go func(){
     i := 0
-    for _ = range lines {
-      // fmt.Println(line)
+    for line := range lines {
+      fmt.Println(line)
       i++
       // fmt.Println(i)
     }

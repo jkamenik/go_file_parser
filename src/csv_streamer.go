@@ -3,6 +3,7 @@ package main
 import (
   "encoding/csv"
   "fmt"
+  "strings"
 )
 
 type CsvLine struct {
@@ -17,8 +18,8 @@ type CsvLine struct {
 // Args
 //  csv    - The csv.Reader that will be read from.
 //  buffer - The "lines" buffer factor.  Send "0" for an unbuffered channel.
-func streamCsv(csv *csv.Reader, buffer int) (lines chan CsvLine) {
-  lines = make(chan CsvLine, buffer)
+func streamCsv(csv *csv.Reader, buffer int) (lines chan *CsvLine) {
+  lines = make(chan *CsvLine, buffer)
 
   go func(){
     // get Header
@@ -35,7 +36,7 @@ func streamCsv(csv *csv.Reader, buffer int) (lines chan CsvLine) {
 
       if len(line) > 0 {
         i++
-        lines <- CsvLine{Header: header, Line: line}
+        lines <- &CsvLine{Header: header, Line: line}
       }
 
       if err != nil {
@@ -47,4 +48,20 @@ func streamCsv(csv *csv.Reader, buffer int) (lines chan CsvLine) {
   }()
 
   return
+}
+
+func (self *CsvLine)Get(key string) (value string){
+  x := -1
+  for i, value := range self.Header {
+    if value == key {
+      x = i
+      break
+    }
+  }
+
+  if x == -1 {
+    return ""
+  }
+
+  return strings.TrimSpace(self.Line[x])
 }
