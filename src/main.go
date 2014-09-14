@@ -7,7 +7,7 @@ import (
   "fmt"
   "encoding/csv"
   "time"
-  "sync"
+  // "sync"
 )
 
 
@@ -39,27 +39,13 @@ func main() {
 func convertLine(csvLines chan CsvLine) (lines chan Line) {
   lines = make(chan Line, Buffer)
 
-  process := func(processor int, group sync.WaitGroup){
-    defer group.Done()
-
+  go func(){
     for line := range csvLines {
       // simulate a IO conversion
       time.Sleep(1 * time.Millisecond)
       // fmt.Printf("%d: %s\n", processor, line)
       lines <- Line(line)
     }
-    fmt.Printf("Processor %d is done\n", processor)
-  }
-
-  go func(){
-    var ws sync.WaitGroup
-    ws.Add(1000)
-    for i := 0; i < 1000 ; i++ {
-      // ws.Add(1)
-      go process(i,ws)
-    }
-
-    ws.Wait()
     close(lines)
   }()
 
