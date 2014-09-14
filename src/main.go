@@ -6,7 +6,7 @@ import (
   "os"
   "fmt"
   "encoding/csv"
-  "time"
+  // "time"
   // "sync"
 )
 
@@ -41,9 +41,7 @@ func convertLine(csvLines chan CsvLine) (lines chan Line) {
 
   go func(){
     for line := range csvLines {
-      // simulate a IO conversion
-      time.Sleep(1 * time.Millisecond)
-      // fmt.Printf("%d: %s\n", processor, line)
+      // TODO: Put conversion here
       lines <- Line(line)
     }
     close(lines)
